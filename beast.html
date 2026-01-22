@@ -2,74 +2,39 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
-  <title>神兽现身</title>
+  <title>3D 神兽展示</title>
 
-  <!-- 引入 model-viewer -->
+  <!-- 必须：model-viewer 核心库 -->
   <script type="module"
-    src="1.glb">
+    src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
   </script>
 
   <style>
-    html, body {
+    body {
       margin: 0;
-      padding: 0;
-      width: 100%;
-      height: 100%;
       background: #000;
-      overflow: hidden;
     }
-
     model-viewer {
       width: 100vw;
       height: 100vh;
-    }
-
-    .tip {
-      position: fixed;
-      bottom: 24px;
-      width: 100%;
-      text-align: center;
-      color: rgba(255,255,255,0.85);
-      font-size: 14px;
-      letter-spacing: 1px;
     }
   </style>
 </head>
 
 <body>
 
-  <!-- 3D 神兽 -->
   <model-viewer
-    id="beast"
-    src="1.glb"
+    src="./1.glb"
     camera-controls
     auto-rotate
+    auto-rotate-delay="0"
     rotation-per-second="30deg"
-    shadow-intensity="1"
     exposure="1.2"
+    shadow-intensity="1"
     environment-image="neutral"
+    ar
   >
   </model-viewer>
-
-  <div class="tip">
-    拖动旋转 · 双指缩放 · 点击神兽
-  </div>
-
-  <script>
-    const beast = document.getElementById('beast')
-
-    beast.addEventListener('click', () => {
-      // 向小程序发送消息
-      if (window.wx && wx.miniProgram) {
-        wx.miniProgram.postMessage({
-          data: {
-            type: 'BEAST_CLICK',
-            text: '吾乃骑凤仙人，镇守此脊已三百年。'
-          }
-        })
-      }
-    })
-  </script>
 
 </body>
 </html>
