@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>3D 神兽展示</title>
 
-  <!-- model-viewer -->
+  <!-- model-viewer 核心库 -->
   <script type="module"
     src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
   </script>
@@ -23,6 +23,7 @@
       width: 100vw;
       height: 100vh;
       background-color: #000;
+      touch-action: pan-y;
     }
 
     #subtitle {
@@ -44,29 +45,37 @@
 <model-viewer
   id="beast"
   src="./1.glb"
+
   camera-controls
-  auto-rotate
-  rotation-per-second="20deg"
+  disable-tap
+  interaction-prompt="none"
+
   camera-orbit="0deg 75deg 3m"
   field-of-view="30deg"
+
+  min-camera-orbit="auto auto 1.5m"
+  max-camera-orbit="auto auto 6m"
+
   exposure="1.2"
   shadow-intensity="1"
   environment-image="neutral"
+
   ar
 >
 </model-viewer>
 
-<div id="subtitle">点击神兽，与它对话</div>
+<div id="subtitle">点击神兽，与我对话</div>
 
 <script>
   const beast = document.getElementById('beast');
   const subtitle = document.getElementById('subtitle');
 
   const lines = [
-    '天地有序，万物有灵。',
-    '我乃脊兽，守护此地。',
-    '今日宜行正道，忌急躁妄为。',
-    '愿你所行，皆得其时。'
+    '我乃屋脊之上镇守四方的神兽，守护人间安宁。',
+    '天地有序，万物有灵，我见证了无数岁月。',
+    '今日天时尚可，宜行稳致远，忌心浮气躁。',
+    '若你心怀敬畏，我自为你指引方向。',
+    '此地平安，皆因我在。'
   ];
 
   beast.addEventListener('click', () => {
@@ -77,6 +86,8 @@
     speech.lang = 'zh-CN';
     speech.rate = 0.9;
     speech.pitch = 1;
+    speech.volume = 1;
+
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(speech);
   });
@@ -84,6 +95,7 @@
 
 </body>
 </html>
+
 
 
 
