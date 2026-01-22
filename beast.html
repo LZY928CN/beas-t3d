@@ -4,36 +4,126 @@
   <meta charset="UTF-8" />
   <title>3D 神兽展示</title>
 
-  <!-- model-viewer 官方库 -->
+  <!-- model-viewer 核心库 -->
   <script type="module"
     src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
   </script>
 
   <style>
-    body {
+    html, body {
       margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
       background: #000;
+      overflow: hidden;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
     }
 
     model-viewer {
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
+    }
+
+    /* 提示气泡 */
+    .tip {
+      position: fixed;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.65);
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 20px;
+      font-size: 14px;
+      opacity: 0;
+      transition: opacity 0.3s;
+      pointer-events: none;
+    }
+
+    .tip.show {
+      opacity: 1;
     }
   </style>
 </head>
 
 <body>
+
+  <!-- 3D 神兽 -->
   <model-viewer
+    id="beast"
     src="./1.glb"
     camera-controls
     auto-rotate
     auto-rotate-delay="0"
     rotation-per-second="30deg"
-    exposure="1"
+    scale="1 1 1"
     shadow-intensity="1"
+    exposure="1"
     environment-image="neutral"
-    ar>
+    ar
+  >
   </model-viewer>
+
+  <!-- 提示文字 -->
+  <div id="tip" class="tip">点击神兽，它会开口说话</div>
+
+  <script>
+    const beast = document.getElementById('beast');
+    const tip = document.getElementById('tip');
+
+    // 神兽第一人称台词（可随便改）
+    const lines = [
+      "吾乃屋脊神兽，守护此地已有百年。",
+      "风雨雷霆，皆由我镇守。",
+      "轻触于我，是缘分。",
+      "天地有序，万物有灵。",
+      "我在此，护你平安。"
+    ];
+
+    let speaking = false;
+
+    function speak(text) {
+      if (!('speechSynthesis' in window)) {
+        alert("当前浏览器不支持语音播报");
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const utter = new SpeechSynthesisUtterance(text);
+      utter.lang = 'zh-CN';
+      utter.rate = 1;
+      utter.pitch = 1;
+      utter.volume = 1;
+
+      speaking = true;
+      tip.innerText = text;
+      tip.classList.add('show');
+
+      utter.onend = () => {
+        speaking = false;
+        setTimeout(() => tip.classList.remove('show'), 800);
+      };
+
+      window.speechSynthesis.speak(utter);
+    }
+
+    // 点击神兽
+    beast.addEventListener('click', () => {
+      if (speaking) return;
+      const text = lines[Math.floor(Math.random() * lines.length)];
+      speak(text);
+    });
+
+    // 首次进入提示
+    setTimeout(() => {
+      tip.classList.add('show');
+      setTimeout(() => tip.classList.remove('show'), 2000);
+    }, 1000);
+  </script>
+
 </body>
 </html>
+
 
