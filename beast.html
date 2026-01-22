@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <title>3D 神兽展示</title>
 
-  <!-- model-viewer 核心库 -->
+  <!-- model-viewer -->
   <script type="module"
     src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
   </script>
@@ -15,14 +15,27 @@
       padding: 0;
       width: 100%;
       height: 100%;
-      background: #000;
       overflow: hidden;
+      background: #000;
+    }
+
+    /* 背景视频 */
+    #bg {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+      filter: brightness(0.75);
     }
 
     model-viewer {
+      position: relative;
+      z-index: 1;
       width: 100vw;
       height: 100vh;
-      background-color: #000;
+      background: transparent;
       touch-action: pan-y;
     }
 
@@ -35,12 +48,18 @@
       font-size: 16px;
       letter-spacing: 1px;
       text-shadow: 0 0 6px rgba(0,0,0,.8);
+      z-index: 2;
       pointer-events: none;
     }
   </style>
 </head>
 
 <body>
+
+<!-- 故宫动态背景 -->
+<video id="bg" autoplay muted loop playsinline>
+  <source src="./bg.mp4" type="video/mp4">
+</video>
 
 <model-viewer
   id="beast"
@@ -59,8 +78,6 @@
   exposure="1.2"
   shadow-intensity="1"
   environment-image="neutral"
-
-  ar
 >
 </model-viewer>
 
@@ -70,16 +87,32 @@
   const beast = document.getElementById('beast');
   const subtitle = document.getElementById('subtitle');
 
-  const lines = [
-    '我乃屋脊之上镇守四方的神兽，守护人间安宁。',
-    '天地有序，万物有灵，我见证了无数岁月。',
-    '今日天时尚可，宜行稳致远，忌心浮气躁。',
-    '若你心怀敬畏，我自为你指引方向。',
-    '此地平安，皆因我在。'
-  ];
+  // B：根据时间变化的第一人称台词
+  function getLine() {
+    const h = new Date().getHours();
+    if (h < 11) return '晨光初起，我已巡守檐脊一夜。';
+    if (h < 17) return '日正当空，此地气运尚稳。';
+    if (h < 21) return '暮色将至，万物需归于安宁。';
+    return '夜深了，我仍在此守护。';
+  }
+
+  // A：说话时轻微点头
+  function nod() {
+    let step = 0;
+    const base = '0deg 75deg 3m';
+    const timer = setInterval(() => {
+      const y = 75 + Math.sin(step) * 3;
+      beast.setAttribute('camera-orbit', `0deg ${y}deg 3m`);
+      step += 0.4;
+      if (step > Math.PI * 2) {
+        clearInterval(timer);
+        beast.setAttribute('camera-orbit', base);
+      }
+    }, 50);
+  }
 
   beast.addEventListener('click', () => {
-    const text = lines[Math.floor(Math.random() * lines.length)];
+    const text = getLine();
     subtitle.innerText = text;
 
     const speech = new SpeechSynthesisUtterance(text);
@@ -90,6 +123,8 @@
 
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(speech);
+
+    nod();
   });
 </script>
 
