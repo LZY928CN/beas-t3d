@@ -108,26 +108,25 @@
       voice.play().catch(()=>{});
 
       // 点头动画（通过 camera-orbit 模拟）
-      beast.setAttribute(
-        'camera-orbit',
-        '0deg 75deg 2.5m'
-      );
+   beast.addEventListener('click', () => {
+  if (speaking) return;
+  speaking = true;
 
-      setTimeout(() => {
-        beast.setAttribute(
-          'camera-orbit',
-          '0deg 65deg 2.5m'
-        );
-      }, 300);
+  // 随机一句话
+  const text = lines[Math.floor(Math.random() * lines.length)];
+  subtitle.innerText = text;
 
-      setTimeout(() => {
-        beast.setAttribute(
-          'camera-orbit',
-          '0deg 70deg 2.5m'
-        );
-        speaking = false;
-      }, 900);
-    });
+  // 播放声音
+  voice.currentTime = 0;
+  voice.play().catch(() => {});
+
+  // ⚠️ 没有动画了，直接结束状态
+  setTimeout(() => {
+    speaking = false;
+  }, 1000);
+});
+
+ 
   </script>
 
 </body>
