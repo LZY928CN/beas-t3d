@@ -6,7 +6,6 @@
   <style>
     html, body {
       margin: 0;
-      padding: 0;
       width: 100%;
       height: 100%;
       overflow: hidden;
@@ -27,7 +26,7 @@
 /* 场景 */
 const scene = new THREE.Scene();
 
-/* 相机（这是稳定显示的关键参数） */
+/* 相机（非常关键，别乱改） */
 const camera = new THREE.PerspectiveCamera(
   35,
   window.innerWidth / window.innerHeight,
@@ -42,46 +41,52 @@ renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
-/* 灯光（足够亮，避免“看似没模型”） */
-scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+/* 灯光（足够亮，不会黑） */
+scene.add(new THREE.AmbientLight(0xffffff, 1.1));
 
-const dirLight = new THREE.DirectionalLight(0xffffff, 0.8);
-dirLight.position.set(5, 10, 7);
+const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
+dirLight.position.set(3, 5, 4);
 scene.add(dirLight);
 
-/* 控制器：只允许缩放，不旋转 */
+/* 控制器：只允许缩放 & 拖动 */
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableRotate = false;
-controls.enablePan = false;
+controls.enableRotate = true;
 controls.enableZoom = true;
+controls.enablePan = false;
+controls.minDistance = 2;
+controls.maxDistance = 6;
+controls.target.set(0, 0.9, 0);
+controls.update();
 
 /* 加载模型 */
 const loader = new THREE.GLTFLoader();
+let model;
+
 loader.load(
   './1.glb',
   (gltf) => {
-    const model = gltf.scene;
+    model = gltf.scene;
 
-  
-    model.scale.set(0.6, 0.6, 0.6);
+    /* 关键：只在这里缩放一次 */
+    model.scale.set(0.45, 0.45, 0.45);
     model.position.set(0, 0, 0);
 
     scene.add(model);
   },
   undefined,
-  (error) => {
-    console.error('模型加载失败:', error);
+  (err) => {
+    console.error('模型加载失败', err);
   }
 );
 
-
+/* 自适应窗口 */
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-/* 渲染循环（不做任何动画） */
+/* 渲染循环（不动模型） */
 function animate() {
   requestAnimationFrame(animate);
   renderer.render(scene, camera);
@@ -91,6 +96,7 @@ animate();
 
 </body>
 </html>
+
 
 
 
