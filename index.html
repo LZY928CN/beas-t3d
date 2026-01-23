@@ -3,6 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <title>3D 神兽展示</title>
+
+  <!-- model-viewer -->
+  <script type="module"
+    src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
+  </script>
+
   <style>
     html, body {
       margin: 0;
@@ -10,123 +16,122 @@
       width: 100%;
       height: 100%;
       overflow: hidden;
-      background: #000;
+      background: black;
+      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
     }
-    canvas {
-      display: block;
+
+    /* 背景视频 */
+    video {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+
+    /* 模型 */
+    model-viewer {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 1;
+      background: transparent;
+    }
+
+    /* 字幕 */
+    #subtitle {
+      position: fixed;
+      bottom: 8%;
+      width: 100%;
+      text-align: center;
+      color: #fff;
+      font-size: 18px;
+      text-shadow: 0 2px 6px rgba(0,0,0,.8);
+      z-index: 2;
+      pointer-events: none;
     }
   </style>
 </head>
+
 <body>
 
-<!-- Three.js -->
-<script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
-<script src="https://unpkg.com/three@0.152.2/examples/js/loaders/GLTFLoader.js"></script>
+  <!-- 背景视频（循环播放） -->
+  <video autoplay loop muted playsinline>
+    <source src="bg.mp4" type="video/mp4">
+  </video>
 
-<script>
-/* ======================
-   基础场景
-====================== */
-const scene = new THREE.Scene();
+  <!-- 神兽模型 -->
+  <model-viewer
+    id="beast"
+    src="1.glb"
+    camera-controls
+    disable-tap
+    interaction-prompt="none"
+    exposure="1.1"
+    shadow-intensity="1"
+    auto-rotate="false">
+  </model-viewer>
 
-/* 相机 */
-const camera = new THREE.PerspectiveCamera(
-  45,
-  window.innerWidth / window.innerHeight,
-  0.1,
-  1000
-);
-camera.position.set(0, 1.5, 6);
+  <!-- 字幕 -->
+  <div id="subtitle">天地有序，万物有灵。</div>
 
-/* 渲染器 */
-const renderer = new THREE.WebGLRenderer({
-  antialias: true,
-  alpha: true
-});
-renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.setPixelRatio(window.devicePixelRatio);
-document.body.appendChild(renderer.domElement);
+  <!-- 说话音频（示例，可换成你自己的） -->
+  <audio id="voice" src="https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3"></audio>
 
-/* ======================
-   灯光（必须有）
-====================== */
-scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+  <script>
+    const beast = document.getElementById('beast');
+    const voice = document.getElementById('voice');
+    const subtitle = document.getElementById('subtitle');
 
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
-dirLight.position.set(5, 10, 7);
-scene.add(dirLight);
+    const lines = [
+      "天地有序，万物有灵。",
+      "夜深了，我仍在此守护。",
+      "这是属于故宫的神兽之力。"
+    ];
 
-/* ======================
-   背景视频（循环）
-====================== */
-const video = document.createElement('video');
-video.src = './bg.mp4';
-video.loop = true;
-video.muted = true;
-video.autoplay = true;
-video.playsInline = true;
+    let speaking = false;
 
-video.play().catch(() => {
-  document.body.addEventListener('click', () => video.play(), { once: true });
-});
+    beast.addEventListener('click', () => {
+      if (speaking) return;
+      speaking = true;
 
-const videoTexture = new THREE.VideoTexture(video);
-videoTexture.colorSpace = THREE.SRGBColorSpace;
+      // 随机一句话
+      const text = lines[Math.floor(Math.random() * lines.length)];
+      subtitle.innerText = text;
 
-const videoGeometry = new THREE.PlaneGeometry(20, 11.25);
-const videoMaterial = new THREE.MeshBasicMaterial({ map: videoTexture });
-const videoMesh = new THREE.Mesh(videoGeometry, videoMaterial);
-videoMesh.position.z = -10;   // 永远在最远
-scene.add(videoMesh);
+      // 播放声音
+      voice.currentTime = 0;
+      voice.play().catch(()=>{});
 
-/* ======================
-   加载模型（关键）
-====================== */
-const loader = new THREE.GLTFLoader();
-loader.load(
-  './1.glb',
-  (gltf) => {
-    const model = gltf.scene;
+      // 点头动画（通过 camera-orbit 模拟）
+      beast.setAttribute(
+        'camera-orbit',
+        '0deg 75deg 2.5m'
+      );
 
-    // 自动居中 + 自动缩放（防止“看不见”）
-    const box = new THREE.Box3().setFromObject(model);
-    const size = box.getSize(new THREE.Vector3()).length();
-    const center = box.getCenter(new THREE.Vector3());
+      setTimeout(() => {
+        beast.setAttribute(
+          'camera-orbit',
+          '0deg 65deg 2.5m'
+        );
+      }, 300);
 
-    model.position.sub(center);
-    model.scale.setScalar(2 / size);
-
-    scene.add(model);
-
-    // 轻微呼吸动画（确认模型真的存在）
-    function modelAnimate() {
-      model.rotation.y += 0.003;
-    }
-
-    renderer.setAnimationLoop(() => {
-      modelAnimate();
-      renderer.render(scene, camera);
+      setTimeout(() => {
+        beast.setAttribute(
+          'camera-orbit',
+          '0deg 70deg 2.5m'
+        );
+        speaking = false;
+      }, 900);
     });
-  },
-  undefined,
-  (err) => {
-    console.error('模型加载失败：', err);
-  }
-);
-
-/* ======================
-   窗口自适应
-====================== */
-window.addEventListener('resize', () => {
-  camera.aspect = window.innerWidth / window.innerHeight;
-  camera.updateProjectionMatrix();
-  renderer.setSize(window.innerWidth, window.innerHeight);
-});
-</script>
+  </script>
 
 </body>
 </html>
-
 
 
 
