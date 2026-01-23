@@ -1,17 +1,17 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="UTF-8">
+<meta charset="UTF-8" />
 <title>3D 神兽展示</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
 <style>
 html, body {
   margin: 0;
   width: 100%;
   height: 100%;
+  background: #000;
   overflow: hidden;
-  background: black;
 }
 canvas {
   display: block;
@@ -21,17 +21,20 @@ canvas {
 
 <body>
 
-<script type="module">
-import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
-import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js";
-import { GLTFLoader } from "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js";
+<script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
+<script src="https://unpkg.com/three@0.152.2/examples/js/loaders/GLTFLoader.js"></script>
 
-// ==================
-// 场景 / 相机 / 渲染器
-// ==================
+<script>
+/* ======================
+   场景
+====================== */
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x000000);
 
+/* ======================
+   相机
+====================== */
 const camera = new THREE.PerspectiveCamera(
   35,
   window.innerWidth / window.innerHeight,
@@ -40,82 +43,79 @@ const camera = new THREE.PerspectiveCamera(
 );
 camera.position.set(0, 1.2, 4);
 
-const renderer = new THREE.WebGLRenderer({
-  antialias: true,
-  alpha: true
-});
+/* ======================
+   渲染器
+====================== */
+const renderer = new THREE.WebGLRenderer({ antialias: true });
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
-renderer.outputColorSpace = THREE.SRGBColorSpace;
 document.body.appendChild(renderer.domElement);
 
-// ==================
-// 灯光（柔和但立体）
-// ==================
+/* ======================
+   灯光
+====================== */
 scene.add(new THREE.AmbientLight(0xffffff, 1.2));
 
-const dirLight = new THREE.DirectionalLight(0xffffff, 2);
-dirLight.position.set(3, 5, 4);
-scene.add(dirLight);
+const light = new THREE.DirectionalLight(0xffffff, 2);
+light.position.set(3, 5, 4);
+scene.add(light);
 
-// ==================
-// 控制器（禁止自动缩放）
-// ==================
-const controls = new OrbitControls(camera, renderer.domElement);
-controls.enableDamping = true;
-controls.enableZoom = false;     // ❗不允许滚轮放大
+/* ======================
+   控制器（无缩放）
+====================== */
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableZoom = false;
 controls.enablePan = false;
+controls.enableDamping = true;
 controls.target.set(0, 1, 0);
 controls.update();
 
-// ==================
-// 加载模型
-// ==================
-const loader = new GLTFLoader();
+/* ======================
+   加载模型
+====================== */
+const loader = new THREE.GLTFLoader();
 
 loader.load(
-  "./1.glb",
-  (gltf) => {
+  "1.glb",
+  function (gltf) {
     const model = gltf.scene;
 
-    // 👉 核心：统一尺寸 + 居中
     const box = new THREE.Box3().setFromObject(model);
     const size = box.getSize(new THREE.Vector3());
     const center = box.getCenter(new THREE.Vector3());
 
     model.position.sub(center);
     const scale = 1.6 / Math.max(size.x, size.y, size.z);
-    model.scale.setScalar(scale);
+    model.scale.set(scale, scale, scale);
 
-    model.position.y = -0.6; // 微调落地高度
+    model.position.y = -0.6;
 
     scene.add(model);
   },
   undefined,
-  (err) => {
-    console.error("模型加载失败", err);
+  function (error) {
+    console.error("模型加载失败", error);
   }
 );
 
-// ==================
-// 自适应
-// ==================
+/* ======================
+   自适应
+====================== */
 window.addEventListener("resize", () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
   renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
-// ==================
-// 渲染循环
-// ==================
+/* ======================
+   渲染循环
+====================== */
 function animate() {
   requestAnimationFrame(animate);
   controls.update();
   renderer.render(scene, camera);
 }
 animate();
-
 </script>
 
 </body>
