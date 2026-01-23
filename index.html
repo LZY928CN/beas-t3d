@@ -11,12 +11,32 @@
       overflow: hidden;
       background: #000;
     }
+
+    /* 视频背景 */
+    #bgVideo {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      z-index: 0;
+    }
+
+    /* Three.js 画布 */
     canvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      z-index: 1;
       display: block;
     }
   </style>
 </head>
 <body>
+
+<!-- 背景视频 -->
+<video id="bgVideo" src="./bg.mp4" autoplay muted loop playsinline></video>
 
 <script src="https://unpkg.com/three@0.152.2/build/three.min.js"></script>
 <script src="https://unpkg.com/three@0.152.2/examples/js/controls/OrbitControls.js"></script>
@@ -26,60 +46,60 @@
 /* 场景 */
 const scene = new THREE.Scene();
 
-/* 相机（非常关键，别乱改） */
+/* 相机（这个参数是我反复试出来的，不要改） */
 const camera = new THREE.PerspectiveCamera(
-  35,
+  30,
   window.innerWidth / window.innerHeight,
   0.1,
   100
 );
-camera.position.set(0, 1.2, 4);
+camera.position.set(0, 1.1, 4);
 
 /* 渲染器 */
-const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+const renderer = new THREE.WebGLRenderer({
+  alpha: true,
+  antialias: true
+});
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
-/* 灯光（足够亮，不会黑） */
-scene.add(new THREE.AmbientLight(0xffffff, 1.1));
+/* 灯光（不黑的关键） */
+scene.add(new THREE.AmbientLight(0xffffff, 1.2));
 
-const dirLight = new THREE.DirectionalLight(0xffffff, 1.2);
-dirLight.position.set(3, 5, 4);
-scene.add(dirLight);
+const light = new THREE.DirectionalLight(0xffffff, 1.5);
+light.position.set(5, 8, 5);
+scene.add(light);
 
-/* 控制器：只允许缩放 & 拖动 */
+/* 控制器：只允许用户看，不乱飞 */
 const controls = new THREE.OrbitControls(camera, renderer.domElement);
-controls.enableRotate = true;
-controls.enableZoom = true;
 controls.enablePan = false;
-controls.minDistance = 2;
+controls.enableDamping = true;
+controls.minDistance = 2.5;
 controls.maxDistance = 6;
 controls.target.set(0, 0.9, 0);
 controls.update();
 
 /* 加载模型 */
 const loader = new THREE.GLTFLoader();
-let model;
-
 loader.load(
   './1.glb',
   (gltf) => {
-    model = gltf.scene;
+    const model = gltf.scene;
 
-    /* 关键：只在这里缩放一次 */
-    model.scale.set(0.45, 0.45, 0.45);
+    /* 固定大小（只设一次） */
+    model.scale.set(0.5, 0.5, 0.5);
     model.position.set(0, 0, 0);
 
     scene.add(model);
   },
   undefined,
   (err) => {
-    console.error('模型加载失败', err);
+    console.error('模型加载失败：', err);
   }
 );
 
-/* 自适应窗口 */
+/* 窗口自适应 */
 window.addEventListener('resize', () => {
   camera.aspect = window.innerWidth / window.innerHeight;
   camera.updateProjectionMatrix();
@@ -89,6 +109,7 @@ window.addEventListener('resize', () => {
 /* 渲染循环（不动模型） */
 function animate() {
   requestAnimationFrame(animate);
+  controls.update();
   renderer.render(scene, camera);
 }
 animate();
@@ -96,6 +117,7 @@ animate();
 
 </body>
 </html>
+
 
 
 
