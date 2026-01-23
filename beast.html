@@ -1,142 +1,140 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-  <meta charset="UTF-8" />
-  <title>3D 神兽展示</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta charset="UTF-8" />
+<title>3D 神兽展示</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- Three.js -->
-  <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
-  <script src="https://unpkg.com/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script>
-  <script src="https://unpkg.com/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
+<!-- Three.js -->
+<script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+<script src="https://unpkg.com/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script>
+<script src="https://unpkg.com/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
 
-  <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      overflow: hidden;
-      width: 100%;
-      height: 100%;
-      background: black;
-      font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
-    }
+<style>
+html,body{
+  margin:0;
+  padding:0;
+  width:100%;
+  height:100%;
+  overflow:hidden;
+  background:black;
+}
 
-    /* 背景视频 */
-    #bgVideo {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      z-index: 0;
-    }
+/* 背景视频 */
+#bgVideo{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  object-fit:cover;
+  z-index:0;
+}
 
-    /* Three.js 画布 */
-    canvas {
-      position: fixed;
-      top: 0;
-      left: 0;
-      z-index: 1;
-    }
+/* Three.js 画布：强制在视频上层 */
+canvas{
+  position:fixed;
+  top:0;
+  left:0;
+  z-index:2;
+}
 
-    /* 字幕 */
-    #subtitle {
-      position: fixed;
-      bottom: 6%;
-      width: 100%;
-      text-align: center;
-      color: #fff;
-      font-size: 16px;
-      letter-spacing: 1px;
-      text-shadow: 0 0 6px rgba(0,0,0,0.8);
-      z-index: 2;
-      pointer-events: none;
-    }
-  </style>
+/* 字幕 */
+#subtitle{
+  position:fixed;
+  bottom:6%;
+  width:100%;
+  text-align:center;
+  color:#fff;
+  font-size:16px;
+  text-shadow:0 0 6px rgba(0,0,0,.8);
+  z-index:3;
+  pointer-events:none;
+}
+</style>
 </head>
 
 <body>
 
-  <!-- 故宫背景视频（循环） -->
-  <video id="bgVideo" src="bg.mp4" autoplay muted loop playsinline></video>
+<!-- 背景视频 -->
+<video id="bgVideo" src="bg.mp4" autoplay muted loop playsinline></video>
 
-  <!-- 字幕 -->
-  <div id="subtitle">这是属于故宫的神兽之力。</div>
+<!-- 字幕 -->
+<div id="subtitle">这是属于故宫的神兽之力。</div>
 
-  <script>
-    // 场景
-    const scene = new THREE.Scene();
+<script>
+/* 场景 */
+const scene = new THREE.Scene();
 
-    // 相机
-    const camera = new THREE.PerspectiveCamera(
-      45,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      100
-    );
-    camera.position.set(0, 1.2, 3.5);
+/* 相机：刻意拉远，避免裁剪模型 */
+const camera = new THREE.PerspectiveCamera(
+  45,
+  window.innerWidth / window.innerHeight,
+  0.01,
+  100
+);
+camera.position.set(0, 1.3, 4.5);
 
-    // 渲染器
-    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    renderer.setPixelRatio(window.devicePixelRatio);
-    document.body.appendChild(renderer.domElement);
+/* 渲染器 */
+const renderer = new THREE.WebGLRenderer({
+  alpha:true,
+  antialias:true
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+document.body.appendChild(renderer.domElement);
 
-    // 光照
-    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+/* 灯光（足够亮，避免模型发黑） */
+scene.add(new THREE.AmbientLight(0xffffff, 1.3));
 
-    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
-    dirLight.position.set(5, 10, 7);
-    scene.add(dirLight);
+const light = new THREE.DirectionalLight(0xffffff, 1);
+light.position.set(5,10,5);
+scene.add(light);
 
-    // 控制器（允许缩放，不自动旋转）
-    const controls = new THREE.OrbitControls(camera, renderer.domElement);
-    controls.enableRotate = false;     // ❌ 禁止模型自转
-    controls.enablePan = false;
-    controls.enableZoom = true;        // ✅ 允许缩放
-    controls.minDistance = 2.2;        // 最近距离
-    controls.maxDistance = 5;          // 最远距离
+/* 控制器：不旋转、不点头、不缩放动画 */
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableRotate = false;   // ❌ 不旋转
+controls.enablePan = false;
+controls.enableZoom = true;      // ✅ 允许缩放
+controls.minDistance = 3.5;
+controls.maxDistance = 6;
 
-    // 加载模型
-    const loader = new THREE.GLTFLoader();
-    loader.load(
-      "1.glb",
-      (gltf) => {
-        const model = gltf.scene;
+/* 加载模型 */
+const loader = new THREE.GLTFLoader();
+loader.load(
+  "1.glb",
+  gltf => {
+    const model = gltf.scene;
 
-        // ✅ 关键：模型缩小
-        model.scale.set(0.35, 0.35, 0.35);
+    /* ✅ 稳定尺寸（不会放大） */
+    model.scale.set(0.25, 0.25, 0.25);
 
-        // 位置微调（防挡字幕）
-        model.position.set(0, -0.6, 0);
+    /* ✅ 固定在镜头正前方 */
+    model.position.set(0, -0.7, 0);
 
-        scene.add(model);
-      },
-      undefined,
-      (error) => {
-        console.error("模型加载失败", error);
-      }
-    );
+    scene.add(model);
+  },
+  undefined,
+  err => console.error(err)
+);
 
-    // 自适应窗口
-    window.addEventListener("resize", () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    });
+/* 自适应 */
+window.addEventListener("resize", ()=>{
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
 
-    // 渲染循环
-    function animate() {
-      requestAnimationFrame(animate);
-      renderer.render(scene, camera);
-    }
-    animate();
-  </script>
+/* 渲染循环（无任何动画） */
+function animate(){
+  requestAnimationFrame(animate);
+  renderer.render(scene, camera);
+}
+animate();
+</script>
 
 </body>
 </html>
-
 
 
 
