@@ -3,25 +3,26 @@
 <head>
   <meta charset="UTF-8" />
   <title>3D 神兽展示</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- model-viewer -->
-  <script type="module"
-    src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
-  </script>
+  <!-- Three.js -->
+  <script src="https://unpkg.com/three@0.158.0/build/three.min.js"></script>
+  <script src="https://unpkg.com/three@0.158.0/examples/js/loaders/GLTFLoader.js"></script>
+  <script src="https://unpkg.com/three@0.158.0/examples/js/controls/OrbitControls.js"></script>
 
   <style>
     html, body {
       margin: 0;
       padding: 0;
+      overflow: hidden;
       width: 100%;
       height: 100%;
-      overflow: hidden;
       background: black;
       font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
     }
 
     /* 背景视频 */
-    video {
+    #bgVideo {
       position: fixed;
       top: 0;
       left: 0;
@@ -31,26 +32,24 @@
       z-index: 0;
     }
 
-    /* 模型 */
-    model-viewer {
+    /* Three.js 画布 */
+    canvas {
       position: fixed;
       top: 0;
       left: 0;
-      width: 100%;
-      height: 100%;
       z-index: 1;
-      background: transparent;
     }
 
     /* 字幕 */
     #subtitle {
       position: fixed;
-      bottom: 8%;
+      bottom: 6%;
       width: 100%;
       text-align: center;
       color: #fff;
-      font-size: 18px;
-      text-shadow: 0 2px 6px rgba(0,0,0,.8);
+      font-size: 16px;
+      letter-spacing: 1px;
+      text-shadow: 0 0 6px rgba(0,0,0,0.8);
       z-index: 2;
       pointer-events: none;
     }
@@ -59,79 +58,85 @@
 
 <body>
 
-  <!-- 背景视频（循环播放） -->
-  <video autoplay loop muted playsinline>
-    <source src="bg.mp4" type="video/mp4">
-  </video>
-
-  <!-- 神兽模型 -->
-  <model-viewer
-    id="beast"
-    src="1.glb"
-    camera-controls
-    disable-tap
-    interaction-prompt="none"
-    exposure="1.1"
-    shadow-intensity="1"
-    auto-rotate="false">
-  </model-viewer>
+  <!-- 故宫背景视频（循环） -->
+  <video id="bgVideo" src="bg.mp4" autoplay muted loop playsinline></video>
 
   <!-- 字幕 -->
-  <div id="subtitle">天地有序，万物有灵。</div>
-
-  <!-- 说话音频（示例，可换成你自己的） -->
-  <audio id="voice" src="https://interactive-examples.mdn.mozilla.net/media/cc0-audio/t-rex-roar.mp3"></audio>
+  <div id="subtitle">这是属于故宫的神兽之力。</div>
 
   <script>
-    const beast = document.getElementById('beast');
-    const voice = document.getElementById('voice');
-    const subtitle = document.getElementById('subtitle');
+    // 场景
+    const scene = new THREE.Scene();
 
-    const lines = [
-      "天地有序，万物有灵。",
-      "夜深了，我仍在此守护。",
-      "这是属于故宫的神兽之力。"
-    ];
+    // 相机
+    const camera = new THREE.PerspectiveCamera(
+      45,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      100
+    );
+    camera.position.set(0, 1.2, 3.5);
 
-    let speaking = false;
+    // 渲染器
+    const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(window.devicePixelRatio);
+    document.body.appendChild(renderer.domElement);
 
-    beast.addEventListener('click', () => {
-      if (speaking) return;
-      speaking = true;
+    // 光照
+    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
 
-      // 随机一句话
-      const text = lines[Math.floor(Math.random() * lines.length)];
-      subtitle.innerText = text;
+    const dirLight = new THREE.DirectionalLight(0xffffff, 1);
+    dirLight.position.set(5, 10, 7);
+    scene.add(dirLight);
 
-      // 播放声音
-      voice.currentTime = 0;
-      voice.play().catch(()=>{});
+    // 控制器（允许缩放，不自动旋转）
+    const controls = new THREE.OrbitControls(camera, renderer.domElement);
+    controls.enableRotate = false;     // ❌ 禁止模型自转
+    controls.enablePan = false;
+    controls.enableZoom = true;        // ✅ 允许缩放
+    controls.minDistance = 2.2;        // 最近距离
+    controls.maxDistance = 5;          // 最远距离
 
-      // 点头动画（通过 camera-orbit 模拟）
-      beast.setAttribute(
-        'camera-orbit',
-        '0deg 75deg 2.5m'
-      );
+    // 加载模型
+    const loader = new THREE.GLTFLoader();
+    loader.load(
+      "1.glb",
+      (gltf) => {
+        const model = gltf.scene;
 
-      setTimeout(() => {
-        beast.setAttribute(
-          'camera-orbit',
-          '0deg 65deg 2.5m'
-        );
-      }, 300);
+        // ✅ 关键：模型缩小
+        model.scale.set(0.35, 0.35, 0.35);
 
-      setTimeout(() => {
-        beast.setAttribute(
-          'camera-orbit',
-          '0deg 70deg 2.5m'
-        );
-        speaking = false;
-      }, 900);
+        // 位置微调（防挡字幕）
+        model.position.set(0, -0.6, 0);
+
+        scene.add(model);
+      },
+      undefined,
+      (error) => {
+        console.error("模型加载失败", error);
+      }
+    );
+
+    // 自适应窗口
+    window.addEventListener("resize", () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
     });
+
+    // 渲染循环
+    function animate() {
+      requestAnimationFrame(animate);
+      renderer.render(scene, camera);
+    }
+    animate();
   </script>
 
 </body>
 </html>
+
 
 
 
