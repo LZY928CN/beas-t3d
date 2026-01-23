@@ -2,40 +2,124 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>模型是否可用测试</title>
+<title>3D 神兽展示</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-<script type="module"
-  src="https://unpkg.com/@google/model-viewer/dist/model-viewer.min.js">
-</script>
-
 <style>
-html,body{
-  margin:0;
-  width:100%;
-  height:100%;
-  background:black;
+html, body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: black;
 }
-model-viewer{
-  width:100%;
-  height:100%;
+canvas {
+  display: block;
 }
 </style>
 </head>
 
 <body>
 
-<model-viewer
-  src="1.glb"
-  camera-controls
-  disable-zoom="false"
-  auto-rotate="false"
-  exposure="1.2"
-  shadow-intensity="1"
-  background-color="transparent">
-</model-viewer>
+<script type="module">
+import * as THREE from "https://unpkg.com/three@0.160.0/build/three.module.js";
+import { OrbitControls } from "https://unpkg.com/three@0.160.0/examples/jsm/controls/OrbitControls.js";
+import { GLTFLoader } from "https://unpkg.com/three@0.160.0/examples/jsm/loaders/GLTFLoader.js";
+
+// ==================
+// 场景 / 相机 / 渲染器
+// ==================
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x000000);
+
+const camera = new THREE.PerspectiveCamera(
+  35,
+  window.innerWidth / window.innerHeight,
+  0.1,
+  100
+);
+camera.position.set(0, 1.2, 4);
+
+const renderer = new THREE.WebGLRenderer({
+  antialias: true,
+  alpha: true
+});
+renderer.setSize(window.innerWidth, window.innerHeight);
+renderer.setPixelRatio(window.devicePixelRatio);
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+// ==================
+// 灯光（柔和但立体）
+// ==================
+scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+
+const dirLight = new THREE.DirectionalLight(0xffffff, 2);
+dirLight.position.set(3, 5, 4);
+scene.add(dirLight);
+
+// ==================
+// 控制器（禁止自动缩放）
+// ==================
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.enableZoom = false;     // ❗不允许滚轮放大
+controls.enablePan = false;
+controls.target.set(0, 1, 0);
+controls.update();
+
+// ==================
+// 加载模型
+// ==================
+const loader = new GLTFLoader();
+
+loader.load(
+  "./1.glb",
+  (gltf) => {
+    const model = gltf.scene;
+
+    // 👉 核心：统一尺寸 + 居中
+    const box = new THREE.Box3().setFromObject(model);
+    const size = box.getSize(new THREE.Vector3());
+    const center = box.getCenter(new THREE.Vector3());
+
+    model.position.sub(center);
+    const scale = 1.6 / Math.max(size.x, size.y, size.z);
+    model.scale.setScalar(scale);
+
+    model.position.y = -0.6; // 微调落地高度
+
+    scene.add(model);
+  },
+  undefined,
+  (err) => {
+    console.error("模型加载失败", err);
+  }
+);
+
+// ==================
+// 自适应
+// ==================
+window.addEventListener("resize", () => {
+  camera.aspect = window.innerWidth / window.innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(window.innerWidth, window.innerHeight);
+});
+
+// ==================
+// 渲染循环
+// ==================
+function animate() {
+  requestAnimationFrame(animate);
+  controls.update();
+  renderer.render(scene, camera);
+}
+animate();
+
+</script>
 
 </body>
 </html>
+
 
 
